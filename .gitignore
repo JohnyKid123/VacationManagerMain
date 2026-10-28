@@ -401,3 +401,12 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 /VacationManager/.idea/.idea.VacationManager/.idea
+
+# Local secrets and machine-specific overrides.
+# ASP.NET Core user-secrets live outside the repo (~/.microsoft/usersecrets).
+appsettings.*.local.json
+appsettings.Local.json
+secrets.json
+.env
+.env.*
+*.env

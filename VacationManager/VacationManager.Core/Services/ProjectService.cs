@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using System.Linq.Expressions;
 using VacationManager.Core.Authentication.Abstractions;
 using VacationManager.Core.Authentication.Extensions;
@@ -28,9 +27,10 @@ namespace VacationManager.Core.Services
 
         protected override async Task ApplyAsync(Project entity, ProjectPrototype prototype, CancellationToken cancellationToken)
         {
+            var currentUser = _authContext.GetCurrentUserRequired();
             entity.Name = prototype.Name;
             entity.Description = prototype.Description;
-            entity.User = _authContext.GetCurrentUserRequired();
+            entity.User = currentUser;
 
             entity.Teams.Clear();
 
@@ -38,8 +38,7 @@ namespace VacationManager.Core.Services
             {
                 var existingTeam = await _teamService.GetByIdRequiredAsync(team.Id, cancellationToken);
 
-
-                if (existingTeam.User.Id != entity.User.Id)
+                if (!string.Equals(existingTeam.UserId, currentUser.Id, StringComparison.Ordinal))
                 {
                     throw new UnauthorizedAccessException($"User does not own the team with id {team.Id}");
                 }
@@ -49,7 +48,7 @@ namespace VacationManager.Core.Services
         }
 
 
-        public async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+        public override async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
         {
             using var context = _dbContextFactory.CreateDbContext();
 
@@ -72,7 +71,7 @@ namespace VacationManager.Core.Services
             }
 
             var currentUser = _authContext.GetCurrentUserRequired();
-            return [project => project.User == currentUser];
+            return [project => project.UserId == currentUser.Id];
         }
     }
 }

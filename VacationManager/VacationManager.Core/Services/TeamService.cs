@@ -20,8 +20,6 @@ namespace VacationManager.Core.Services
 {
     public class TeamService(IRepository<Team> repository, IAuthenticationContext authContext, IUserService userService, IDbContextFactory<ApplicationDbContext> dbContextFactory) : BaseService<Team, TeamPrototype>(repository), ITeamService
     {
-        //private readonly ITeamService _teamService = teamService ?? throw new ArgumentNullException(nameof(teamService));
-        //private readonly IProjectService _projectService = projectService ?? throw new ArgumentNullException(nameof(projectService));
         private readonly IAuthenticationContext _authContext = authContext ?? throw new ArgumentNullException(nameof(authContext));
         private readonly IUserService _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
@@ -74,7 +72,7 @@ namespace VacationManager.Core.Services
             entity.ProjectId = prototype.ProjectId;
 
         }
-        public async Task<Team[]> GetAllAsync(CancellationToken cancellationToken)
+        public override async Task<Team[]> GetAllAsync(CancellationToken cancellationToken)
         {
             var includes = new[]
             {
@@ -84,16 +82,16 @@ namespace VacationManager.Core.Services
                 nameof(Team.User)
             };
 
-            return await repository.GetManyWithNavigationsAsync([], includes, cancellationToken);
+            return await Repository.GetManyWithNavigationsAsync([], includes, cancellationToken);
         }
         protected override IEnumerable<Expression<Func<Team, bool>>> BuildAdditionalFilters()
         {
             ApplicationUser currentUser = this._authContext.GetCurrentUserRequired();
-            return [ti => ti.User == currentUser];
+            return [team => team.UserId == currentUser.Id];
         }
-        public async Task<Team?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        public override async Task<Team?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            using var context = dbContextFactory.CreateDbContext();
+            using var context = _dbContextFactory.CreateDbContext();
 
             return await context.Teams
                 .Include(t => t.Project)
@@ -101,24 +99,24 @@ namespace VacationManager.Core.Services
                 .Include(t => t.Developers)
                 .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
         }
-        public async Task SoftDeleteAsync(Guid teamId, CancellationToken cancellationToken)
+        public override async Task SoftDeleteAsync(Guid teamId, CancellationToken cancellationToken)
         {
-            var team = await repository.GetCompleteAsync([t => t.Id == teamId], cancellationToken);
+            var team = await Repository.GetCompleteAsync([t => t.Id == teamId], cancellationToken);
             if (team == null) throw new ArgumentException("Team not found");
 
             foreach (var developer in team.Developers)
             {
-                await userService.ChangeRoleAsync(developer, Role.Unassigned, cancellationToken);
+                await _userService.ChangeRoleAsync(developer, Role.Unassigned, cancellationToken);
             }
 
             if (team.TeamLead != null)
             {
-                await userService.ChangeRoleAsync(team.TeamLead, Role.Unassigned, cancellationToken);
+                await _userService.ChangeRoleAsync(team.TeamLead, Role.Unassigned, cancellationToken);
             }
 
             team.Developers.Clear();
 
-            await repository.DeleteAsync(team, cancellationToken);
+            await Repository.DeleteAsync(team, cancellationToken);
         }
         public async Task<Team?> GetTeamByUserIdAsync(string userId, CancellationToken cancellationToken)
         {
@@ -130,18 +128,18 @@ namespace VacationManager.Core.Services
 
             var filters = new Expression<Func<Team, bool>>[]
             {
-            t => t.Developers.Any(d => d.Id == userId) || t.TeamLead.Id == userId
+                team => team.Developers.Any(developer => developer.Id == userId) || team.TeamLeadId == userId
             };
 
-            return await repository.GetWithNavigationsAsync(filters, includes, cancellationToken);
+            return await Repository.GetWithNavigationsAsync(filters, includes, cancellationToken);
         }
         public async Task<List<ApplicationUser>> GetDevelopersForTeamAsync(Guid teamId, CancellationToken cancellationToken)
         {
-            var includes = new[] { nameof(Team.Developers) }; // Include developers in the query
-            var filters = new Expression<Func<Team, bool>>[] { t => t.Id == teamId };
-    
-            var team = await repository.GetWithNavigationsAsync(filters, includes, cancellationToken);
-            return team?.Developers ?? new List<ApplicationUser>(); // Return developers if team exists
+            var includes = new[] { nameof(Team.Developers) };
+            var filters = new Expression<Func<Team, bool>>[] { team => team.Id == teamId };
+
+            var team = await Repository.GetWithNavigationsAsync(filters, includes, cancellationToken);
+            return team?.Developers ?? new List<ApplicationUser>();
         }
 
 

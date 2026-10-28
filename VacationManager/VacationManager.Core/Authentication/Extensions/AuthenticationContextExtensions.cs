@@ -13,7 +13,10 @@ public static class AuthenticationContextExtensions
 {
     public static ApplicationUser GetCurrentUserRequired(this IAuthenticationContext authContext)
     {
-        //if (!authContext.IsAuthenticated) throw new InvalidOperationException("This action requires an authenticated user.");
+        if (authContext.CurrentUser is null)
+        {
+            throw new InvalidOperationException("This action requires an authenticated user.");
+        }
 
         return authContext.CurrentUser;
     }

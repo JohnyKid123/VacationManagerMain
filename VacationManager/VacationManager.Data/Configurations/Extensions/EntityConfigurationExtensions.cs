@@ -1,13 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using VacationManager.Data.Models.Abstractions;
 
-namespace VacationManager.Data.Configurations.Extentions
+namespace VacationManager.Data.Configurations.Extensions
 {
     internal static class EntityConfigurationExtensions
     {

@@ -10,7 +10,7 @@ namespace VacationManager.Data.Models;
 
 public class Team : BaseEntity, IUserResource
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
 
     public Guid? ProjectId { get; set; }
