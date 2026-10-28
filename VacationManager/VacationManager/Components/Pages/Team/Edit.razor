@@ -133,9 +133,7 @@
     private Project[] projects = [];
     private ApplicationUser[] unassignedUsers = [];
     private List<ApplicationUser> selectedUsers = new();
-    private bool isChecked;
-    private List<ApplicationUser> availableUsers = new(); // unassigned потребители
-    private bool editTriggered = false;
+    private List<ApplicationUser> availableUsers = new();
 
 
     CancellationToken cancellationToken = new();

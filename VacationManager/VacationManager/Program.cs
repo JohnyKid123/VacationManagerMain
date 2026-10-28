@@ -24,7 +24,6 @@ using VacationManager.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-//builder.Services.AddRazorComponents();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -42,9 +41,15 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' is missing. Set it in appsettings.Development.json, with user-secrets, or with the ConnectionStrings__DefaultConnection environment variable.");
+}
+
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -75,7 +80,6 @@ builder.Services.AddAuthorization(options =>
         policy.Requirements.Add(new HasAnyRoleRequirement(Role.TeamLead, Role.CEO)));
 });
 
-//builder.Services.AddScoped<IAuthorizationHandler, HasRoleHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, HasAnyRoleHandler>();
 
 var app = builder.Build();

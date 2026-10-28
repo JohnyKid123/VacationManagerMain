@@ -10,7 +10,7 @@ namespace VacationManager.Core.Services.Abstractions
 {
     public interface ITeamService : IService<Team, TeamPrototype>
     {
-        Task<Team> GetTeamByUserIdAsync(string userId, CancellationToken cancellationToken);
+        Task<Team?> GetTeamByUserIdAsync(string userId, CancellationToken cancellationToken);
         Task<List<ApplicationUser>> GetDevelopersForTeamAsync(Guid teamId, CancellationToken cancellationToken);
 
     }

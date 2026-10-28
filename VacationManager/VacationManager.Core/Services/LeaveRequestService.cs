@@ -24,13 +24,13 @@ namespace VacationManager.Core.Services
         r => r.Id == id
     };
 
-            var request = await repository.GetAsync(filters, cancellationToken);
+            var request = await Repository.GetAsync(filters, cancellationToken);
             if (request == null)
                 throw new ArgumentException("Leave request not found");
 
             request.ApprovalStatus = ApprovalStatus.Approved;
 
-            await repository.UpdateAsync(request, cancellationToken);
+            await Repository.UpdateAsync(request, cancellationToken);
         }
 
         public async Task DenyAsync(Guid id, CancellationToken cancellationToken = default)
@@ -40,18 +40,18 @@ namespace VacationManager.Core.Services
         r => r.Id == id
     };
 
-            var request = await repository.GetAsync(filters, cancellationToken);
+            var request = await Repository.GetAsync(filters, cancellationToken);
             if (request == null)
                 throw new ArgumentException("Leave request not found");
 
             request.ApprovalStatus = ApprovalStatus.Denied;
 
-            await repository.UpdateAsync(request, cancellationToken);
+            await Repository.UpdateAsync(request, cancellationToken);
         }
 
 
 
-        protected override async Task ApplyAsync(LeaveRequest entity, LeaveRequestPrototype prototype, CancellationToken cancellationToken)
+        protected override Task ApplyAsync(LeaveRequest entity, LeaveRequestPrototype prototype, CancellationToken cancellationToken)
         {
             entity.User = _authContext.GetCurrentUserRequired();
             entity.StartDate = prototype.StartDate;
@@ -61,15 +61,16 @@ namespace VacationManager.Core.Services
             entity.Type = prototype.Type;
             entity.AttachmentPath = prototype.AttachmentPath;
             entity.ApprovalStatus = prototype.ApprovalStatus;
+            return Task.CompletedTask;
         }
 
-        public async Task<LeaveRequest?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        public override async Task<LeaveRequest?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var filters = BuildAdditionalFilters().ToList();
 
             filters.Add(lr => lr.Id == id);
 
-            return await repository.GetWithNavigationsAsync(
+            return await Repository.GetWithNavigationsAsync(
                 filters,
                 new[] { "User" },
                 cancellationToken
@@ -78,27 +79,22 @@ namespace VacationManager.Core.Services
 
         public async Task<List<LeaveRequest>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
         {
-            // Add the current user's role-based filters (CEO or TeamLead can see all leave requests)
             var filters = BuildAdditionalFilters().ToList();
+            filters.Add(leaveRequest => leaveRequest.UserId == userId);
 
-            // Add a filter for the user ID to fetch only leave requests for the specific user
-            filters.Add(lr => lr.User.Id == userId.ToString());
-
-            // Fetch leave requests for the given user with navigation for related entities like 'User'
-            var leaveRequests = await repository.GetManyWithNavigationsAsync(
+            var leaveRequests = await Repository.GetManyWithNavigationsAsync(
                 filters,
-                new[] { "User" }, // Load related user data
+                new[] { "User" },
                 cancellationToken
             );
 
-            return leaveRequests.ToList(); // Return the list of leave requests
+            return leaveRequests.ToList();
         }
 
-        
-        public async Task<LeaveRequest[]> GetAllAsync(CancellationToken cancellationToken = default)
+        public override async Task<LeaveRequest[]> GetAllAsync(CancellationToken cancellationToken = default)
         {
             var filters = BuildAdditionalFilters();
-            return await repository.GetManyWithNavigationsAsync(
+            return await Repository.GetManyWithNavigationsAsync(
                 filters,
                 new[] { "User" },
                 cancellationToken
@@ -111,10 +107,10 @@ namespace VacationManager.Core.Services
 
             if (currentUser.Role is Role.CEO or Role.TeamLead)
             {
-                return []; // няма филтри, виждат всичко
+                return [];
             }
 
-            return [lr => lr.User == currentUser]; // само собствените заявки
+            return [leaveRequest => leaveRequest.UserId == currentUser.Id];
         }
 
     }

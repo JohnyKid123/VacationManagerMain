@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VacationManager.Data.Models;
-using VacationManager.Data.Configurations.Extentions;
+using VacationManager.Data.Configurations.Extensions;
 
 namespace VacationManager.Data.Configurations;
 

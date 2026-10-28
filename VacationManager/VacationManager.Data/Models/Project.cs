@@ -10,8 +10,8 @@ namespace VacationManager.Data.Models;
 
 public class Project : BaseEntity, IUserResource
 {
-    public string Name { get; set; }
-    public string Description { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
 
 
     public List<Team> Teams { get; set; } = new();

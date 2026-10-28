@@ -15,29 +15,29 @@ public abstract class BaseService<TEntity, TPrototype>(IRepository<TEntity> repo
     where TEntity : class, IEntity, new()
     where TPrototype : class
 {
-    private readonly IRepository<TEntity> _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    protected readonly IRepository<TEntity> Repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
-    public Task<TEntity[]> GetAllAsync(CancellationToken cancellationToken)
-        => this._repository.GetManyAsync(this.BuildAdditionalFilters(), cancellationToken);
+    public virtual Task<TEntity[]> GetAllAsync(CancellationToken cancellationToken)
+        => this.Repository.GetManyAsync(this.BuildAdditionalFilters(), cancellationToken);
 
     public Task<TEntity[]> GetAllWithNavigationsAsync(IEnumerable<string> navigations, CancellationToken cancellationToken)
-        => this._repository.GetManyWithNavigationsAsync(this.BuildAdditionalFilters(), navigations, cancellationToken);
+        => this.Repository.GetManyWithNavigationsAsync(this.BuildAdditionalFilters(), navigations, cancellationToken);
 
     public Task<TEntity[]> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
-        => this._repository.GetManyAsync([e => ids.Contains(e.Id), .. this.BuildAdditionalFilters()], cancellationToken);
+        => this.Repository.GetManyAsync([e => ids.Contains(e.Id), .. this.BuildAdditionalFilters()], cancellationToken);
 
-    public Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
-        => this._repository.GetAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], cancellationToken);
+    public virtual Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+        => this.Repository.GetAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], cancellationToken);
 
     public Task<TEntity?> GetByIdCompleteAsync(Guid id, CancellationToken cancellationToken)
-        => this._repository.GetCompleteAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], cancellationToken);
+        => this.Repository.GetCompleteAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], cancellationToken);
 
     public Task<TEntity?> GetByIdWithNavigationsAsync(Guid id, IEnumerable<string> navigations, CancellationToken cancellationToken)
-        => this._repository.GetWithNavigationsAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], navigations, cancellationToken);
+        => this.Repository.GetWithNavigationsAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], navigations, cancellationToken);
 
     public async Task<TEntity> GetByIdRequiredAsync(Guid id, CancellationToken cancellationToken)
     {
-        TEntity? entity = await this._repository.GetAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], cancellationToken);
+        TEntity? entity = await this.Repository.GetAsync([e => e.Id == id, .. this.BuildAdditionalFilters()], cancellationToken);
         EnsureEntityNotNull(entity);
 
         return entity;
@@ -52,7 +52,7 @@ public abstract class BaseService<TEntity, TPrototype>(IRepository<TEntity> repo
         entity.CreatedAt = currentTime;
         entity.LastModifiedAt = currentTime;
 
-        await this._repository.CreateAsync(entity, cancellationToken);
+        await this.Repository.CreateAsync(entity, cancellationToken);
         return entity;
     }
 
@@ -64,24 +64,24 @@ public abstract class BaseService<TEntity, TPrototype>(IRepository<TEntity> repo
         await this.ApplyAsync(entity, prototype, cancellationToken);
         entity.LastModifiedAt = DateTime.Now;
 
-        await this._repository.UpdateAsync(entity, cancellationToken);
+        await this.Repository.UpdateAsync(entity, cancellationToken);
         return entity;
     }
 
-    public async Task SoftDeleteAsync(Guid entityId, CancellationToken cancellationToken)
+    public virtual async Task SoftDeleteAsync(Guid entityId, CancellationToken cancellationToken)
     {
         TEntity entity = await this.GetByIdRequiredAsync(entityId, cancellationToken);
 
         entity.IsDeleted = true;
         entity.LastModifiedAt = DateTime.Now;
-        await this._repository.UpdateAsync(entity, cancellationToken);
+        await this.Repository.UpdateAsync(entity, cancellationToken);
     }
 
     public async Task HardDeleteAsync(Guid entityId, CancellationToken cancellationToken)
     {
         TEntity entity = await this.GetByIdRequiredAsync(entityId, cancellationToken);
 
-        await this._repository.DeleteAsync(entity, cancellationToken);
+        await this.Repository.DeleteAsync(entity, cancellationToken);
     }
 
     protected abstract Task ApplyAsync(TEntity entity, TPrototype prototype, CancellationToken cancellationToken);
